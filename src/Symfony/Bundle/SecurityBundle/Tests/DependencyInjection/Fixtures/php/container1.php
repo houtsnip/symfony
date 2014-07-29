@@ -70,10 +70,12 @@ $container->loadFromExtension('security', array(
             'switch_user' => true,
             'x509' => true,
             'logout' => true,
+            'remember_me' => array('key' => 'TheKey')
         ),
         'host' => array(
             'pattern' => '/test',
             'host' => 'foo\\.example\\.org',
+            'methods' => array('GET', 'POST'),
             'anonymous' => true,
             'http_basic' => true,
         ),
@@ -82,6 +84,7 @@ $container->loadFromExtension('security', array(
     'access_control' => array(
         array('path' => '/blog/524', 'role' => 'ROLE_USER', 'requires_channel' => 'https', 'methods' => array('get', 'POST')),
         array('path' => '/blog/.*', 'role' => 'IS_AUTHENTICATED_ANONYMOUSLY'),
+        array('path' => '/blog/524', 'role' => 'IS_AUTHENTICATED_ANONYMOUSLY', 'allow_if' => "token.getUsername() matches '/^admin/'"),
     ),
 
     'role_hierarchy' => array(

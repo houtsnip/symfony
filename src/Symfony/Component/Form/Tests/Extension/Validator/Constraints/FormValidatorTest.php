@@ -394,7 +394,7 @@ class FormValidatorTest extends \PHPUnit_Framework_TestCase
     {
         $context = $this->getMockExecutionContext();
         $object = $this->getMock('\stdClass');
-        $options = array('validation_groups' => function(FormInterface $form){
+        $options = array('validation_groups' => function (FormInterface $form) {
             return array('group1', 'group2');
         });
         $form = $this->getBuilder('name', '\stdClass', $options)
@@ -426,11 +426,11 @@ class FormValidatorTest extends \PHPUnit_Framework_TestCase
         ));
 
         $parent->add($form);
-        $parent->add($this->getClickedSubmitButton('submit', array(
+        $parent->add($this->getSubmitButton('submit', array(
             'validation_groups' => 'button_group',
         )));
 
-        $form->setData($object);
+        $parent->submit(array('name' => $object, 'submit' => ''));
 
         $context->expects($this->once())
             ->method('validate')
@@ -529,7 +529,7 @@ class FormValidatorTest extends \PHPUnit_Framework_TestCase
         $object = $this->getMock('\stdClass');
 
         $parentOptions = array(
-            'validation_groups' => function(FormInterface $form){
+            'validation_groups' => function (FormInterface $form) {
                 return array('group1', 'group2');
             },
             'cascade_validation' => true,
@@ -604,6 +604,28 @@ class FormValidatorTest extends \PHPUnit_Framework_TestCase
                 array('{{ extra_fields }}' => 'foo'),
                 array('foo' => 'bar')
             );
+        $context->expects($this->never())
+            ->method('addViolationAt');
+
+        $this->validator->initialize($context);
+        $this->validator->validate($form, new Form());
+    }
+
+    public function testNoViolationIfAllowExtraData()
+    {
+        $context = $this->getMockExecutionContext();
+
+        $form = $this
+            ->getBuilder('parent', null, array('allow_extra_fields' => true))
+            ->setCompound(true)
+            ->setDataMapper($this->getDataMapper())
+            ->add($this->getBuilder('child'))
+            ->getForm();
+
+        $form->bind(array('foo' => 'bar'));
+
+        $context->expects($this->never())
+            ->method('addViolation');
         $context->expects($this->never())
             ->method('addViolationAt');
 
@@ -727,11 +749,6 @@ class FormValidatorTest extends \PHPUnit_Framework_TestCase
         $builder = new SubmitButtonBuilder($name, $options);
 
         return $builder->getForm();
-    }
-
-    private function getClickedSubmitButton($name = 'name', array $options = array())
-    {
-        return $this->getSubmitButton($name, $options)->submit('');
     }
 
     /**

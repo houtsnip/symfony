@@ -4,7 +4,7 @@
         <body>
             <trans-unit id="1">
                 <source>This value should be false.</source>
-                <target>Verdien skulle ha vore tom/nei</target>
+                <target>Verdien skulle ha vore tom/nei.</target>
             </trans-unit>
             <trans-unit id="2">
                 <source>This value should be true.</source>
@@ -175,7 +175,7 @@
                 <target>Billethøgda er for låg, ({{ height }} pikslar). Forventa minimumshøgde er {{ min_height }} pikslar.</target>
             </trans-unit>
             <trans-unit id="47">
-                <source>This value should be the user current password.</source>
+                <source>This value should be the user's current password.</source>
                 <target>Verdien må vere brukaren sitt noverande passord.</target>
             </trans-unit>
             <trans-unit id="48">

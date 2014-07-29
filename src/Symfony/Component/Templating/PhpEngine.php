@@ -32,14 +32,17 @@ class PhpEngine implements EngineInterface, \ArrayAccess
 {
     protected $loader;
     protected $current;
-    protected $helpers;
-    protected $parents;
-    protected $stack;
-    protected $charset;
-    protected $cache;
-    protected $escapers;
-    protected static $escaperCache;
-    protected $globals;
+    /**
+     * @var HelperInterface[]
+     */
+    protected $helpers = array();
+    protected $parents = array();
+    protected $stack = array();
+    protected $charset = 'UTF-8';
+    protected $cache = array();
+    protected $escapers = array();
+    protected static $escaperCache = array();
+    protected $globals = array();
     protected $parser;
 
     private $evalTemplate;
@@ -56,13 +59,8 @@ class PhpEngine implements EngineInterface, \ArrayAccess
     {
         $this->parser  = $parser;
         $this->loader  = $loader;
-        $this->parents = array();
-        $this->stack   = array();
-        $this->charset = 'UTF-8';
-        $this->cache   = array();
-        $this->globals = array();
 
-        $this->setHelpers($helpers);
+        $this->addHelpers($helpers);
 
         $this->initializeEscapers();
         foreach ($this->escapers as $context => $escaper) {
@@ -71,15 +69,9 @@ class PhpEngine implements EngineInterface, \ArrayAccess
     }
 
     /**
-     * Renders a template.
-     *
-     * @param mixed $name       A template name or a TemplateReferenceInterface instance
-     * @param array $parameters An array of parameters to pass to the template
-     *
-     * @return string The evaluated template as a string
+     * {@inheritdoc}
      *
      * @throws \InvalidArgumentException if the template does not exist
-     * @throws \RuntimeException         if the template cannot be rendered
      *
      * @api
      */
@@ -112,11 +104,7 @@ class PhpEngine implements EngineInterface, \ArrayAccess
     }
 
     /**
-     * Returns true if the template exists.
-     *
-     * @param mixed $name A template name or a TemplateReferenceInterface instance
-     *
-     * @return Boolean true if the template exists, false otherwise
+     * {@inheritdoc}
      *
      * @api
      */
@@ -132,11 +120,7 @@ class PhpEngine implements EngineInterface, \ArrayAccess
     }
 
     /**
-     * Returns true if this class is able to render the given template.
-     *
-     * @param mixed $name A template name or a TemplateReferenceInterface instance
-     *
-     * @return Boolean true if this class supports the given resource, false otherwise
+     * {@inheritdoc}
      *
      * @api
      */
@@ -217,7 +201,7 @@ class PhpEngine implements EngineInterface, \ArrayAccess
      *
      * @param string $name The helper name
      *
-     * @return Boolean true if the helper is defined, false otherwise
+     * @return bool    true if the helper is defined, false otherwise
      *
      * @api
      */
@@ -303,7 +287,7 @@ class PhpEngine implements EngineInterface, \ArrayAccess
      *
      * @param string $name The helper name
      *
-     * @return Boolean true if the helper is defined, false otherwise
+     * @return bool    true if the helper is defined, false otherwise
      *
      * @api
      */
@@ -383,6 +367,10 @@ class PhpEngine implements EngineInterface, \ArrayAccess
     public function setCharset($charset)
     {
         $this->charset = $charset;
+
+        foreach ($this->helpers as $helper) {
+            $helper->setCharset($this->charset);
+        }
     }
 
     /**
@@ -567,7 +555,7 @@ class PhpEngine implements EngineInterface, \ArrayAccess
     /**
      * Loads the given template.
      *
-     * @param mixed $name A template name or a TemplateReferenceInterface instance
+     * @param string|TemplateReferenceInterface $name A template name or a TemplateReferenceInterface instance
      *
      * @return Storage A Storage instance
      *

@@ -32,6 +32,7 @@ class SimpleAuthenticationHandler implements AuthenticationFailureHandlerInterfa
     protected $successHandler;
     protected $failureHandler;
     protected $simpleAuthenticator;
+    protected $logger;
 
     /**
      * Constructor.
@@ -50,7 +51,7 @@ class SimpleAuthenticationHandler implements AuthenticationFailureHandlerInterfa
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function onAuthenticationSuccess(Request $request, TokenInterface $token)
     {
@@ -77,7 +78,7 @@ class SimpleAuthenticationHandler implements AuthenticationFailureHandlerInterfa
     }
 
     /**
-     * {@inheritDoc}
+     * {@inheritdoc}
      */
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception)
     {

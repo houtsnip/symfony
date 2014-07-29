@@ -67,13 +67,13 @@ class Container implements IntrospectableContainerInterface
      */
     protected $parameterBag;
 
-    protected $services;
-    protected $methodMap;
-    protected $aliases;
-    protected $scopes;
-    protected $scopeChildren;
-    protected $scopedServices;
-    protected $scopeStacks;
+    protected $services = array();
+    protected $methodMap = array();
+    protected $aliases = array();
+    protected $scopes = array();
+    protected $scopeChildren = array();
+    protected $scopedServices = array();
+    protected $scopeStacks = array();
     protected $loading = array();
 
     /**
@@ -85,14 +85,7 @@ class Container implements IntrospectableContainerInterface
      */
     public function __construct(ParameterBagInterface $parameterBag = null)
     {
-        $this->parameterBag = null === $parameterBag ? new ParameterBag() : $parameterBag;
-
-        $this->services       = array();
-        $this->aliases        = array();
-        $this->scopes         = array();
-        $this->scopeChildren  = array();
-        $this->scopedServices = array();
-        $this->scopeStacks    = array();
+        $this->parameterBag = $parameterBag ?: new ParameterBag();
 
         $this->set('service_container', $this);
     }
@@ -117,7 +110,7 @@ class Container implements IntrospectableContainerInterface
     /**
      * Returns true if the container parameter bag are frozen.
      *
-     * @return Boolean true if the container parameter bag are frozen, false otherwise
+     * @return bool    true if the container parameter bag are frozen, false otherwise
      *
      * @api
      */
@@ -159,7 +152,7 @@ class Container implements IntrospectableContainerInterface
      *
      * @param string $name The parameter name
      *
-     * @return Boolean The presence of parameter in container
+     * @return bool    The presence of parameter in container
      *
      * @api
      */
@@ -214,7 +207,7 @@ class Container implements IntrospectableContainerInterface
 
         $this->services[$id] = $service;
 
-        if (method_exists($this, $method = 'synchronize'.strtr($id, array('_' => '', '.' => '_')).'Service')) {
+        if (method_exists($this, $method = 'synchronize'.strtr($id, array('_' => '', '.' => '_', '\\' => '_')).'Service')) {
             $this->$method();
         }
 
@@ -232,7 +225,7 @@ class Container implements IntrospectableContainerInterface
      *
      * @param string $id The service identifier
      *
-     * @return Boolean true if the service is defined, false otherwise
+     * @return bool    true if the service is defined, false otherwise
      *
      * @api
      */
@@ -243,7 +236,7 @@ class Container implements IntrospectableContainerInterface
         return isset($this->services[$id])
             || array_key_exists($id, $this->services)
             || isset($this->aliases[$id])
-            || method_exists($this, 'get'.strtr($id, array('_' => '', '.' => '_')).'Service')
+            || method_exists($this, 'get'.strtr($id, array('_' => '', '.' => '_', '\\' => '_')).'Service')
         ;
     }
 
@@ -254,7 +247,7 @@ class Container implements IntrospectableContainerInterface
      * with a get{$id}Service() method, the former has always precedence.
      *
      * @param string  $id              The service identifier
-     * @param integer $invalidBehavior The behavior when the service does not exist
+     * @param int     $invalidBehavior The behavior when the service does not exist
      *
      * @return object The associated service
      *
@@ -271,7 +264,7 @@ class Container implements IntrospectableContainerInterface
         // Attempt to retrieve the service by checking first aliases then
         // available services. Service IDs are case insensitive, however since
         // this method can be called thousands of times during a request, avoid
-        // calling strotolower() unless necessary.
+        // calling strtolower() unless necessary.
         foreach (array(false, true) as $strtolower) {
             if ($strtolower) {
                 $id = strtolower($id);
@@ -291,7 +284,7 @@ class Container implements IntrospectableContainerInterface
 
         if (isset($this->methodMap[$id])) {
             $method = $this->methodMap[$id];
-        } elseif (method_exists($this, $method = 'get'.strtr($id, array('_' => '', '.' => '_')).'Service')) {
+        } elseif (method_exists($this, $method = 'get'.strtr($id, array('_' => '', '.' => '_', '\\' => '_')).'Service')) {
             // $method is set to the right value, proceed
         } else {
             if (self::EXCEPTION_ON_INVALID_REFERENCE === $invalidBehavior) {
@@ -310,7 +303,7 @@ class Container implements IntrospectableContainerInterface
                 throw new ServiceNotFoundException($id, null, null, $alternatives);
             }
 
-            return null;
+            return;
         }
 
         $this->loading[$id] = true;
@@ -325,7 +318,7 @@ class Container implements IntrospectableContainerInterface
             }
 
             if ($e instanceof InactiveScopeException && self::EXCEPTION_ON_INVALID_REFERENCE !== $invalidBehavior) {
-                return null;
+                return;
             }
 
             throw $e;
@@ -341,11 +334,12 @@ class Container implements IntrospectableContainerInterface
      *
      * @param string $id The service identifier
      *
-     * @return Boolean true if service has already been initialized, false otherwise
+     * @return bool    true if service has already been initialized, false otherwise
      */
     public function initialized($id)
     {
         $id = strtolower($id);
+
         return isset($this->services[$id]) || array_key_exists($id, $this->services);
     }
 
@@ -497,7 +491,7 @@ class Container implements IntrospectableContainerInterface
      *
      * @param string $name The name of the scope
      *
-     * @return Boolean
+     * @return bool
      *
      * @api
      */
@@ -513,7 +507,7 @@ class Container implements IntrospectableContainerInterface
      *
      * @param string $name
      *
-     * @return Boolean
+     * @return bool
      *
      * @api
      */
@@ -531,7 +525,7 @@ class Container implements IntrospectableContainerInterface
      */
     public static function camelize($id)
     {
-        return strtr(ucwords(strtr($id, array('_' => ' ', '.' => '_ '))), array(' ' => ''));
+        return strtr(ucwords(strtr($id, array('_' => ' ', '.' => '_ ', '\\' => '_ '))), array(' ' => ''));
     }
 
     /**

@@ -20,16 +20,18 @@ use Symfony\Component\Serializer\Normalizer\CustomNormalizer;
 
 class XmlEncoderTest extends \PHPUnit_Framework_TestCase
 {
+    private $encoder;
+
     protected function setUp()
     {
-        $this->encoder = new XmlEncoder;
+        $this->encoder = new XmlEncoder();
         $serializer = new Serializer(array(new CustomNormalizer()), array('xml' => new XmlEncoder()));
         $this->encoder->setSerializer($serializer);
     }
 
     public function testEncodeScalar()
     {
-        $obj = new ScalarDummy;
+        $obj = new ScalarDummy();
         $obj->xmlFoo = "foo";
 
         $expected = '<?xml version="1.0"?>'."\n".
@@ -40,7 +42,7 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
 
     public function testSetRootNodeName()
     {
-        $obj = new ScalarDummy;
+        $obj = new ScalarDummy();
         $obj->xmlFoo = "foo";
 
         $this->encoder->setRootNodeName('test');
@@ -51,7 +53,7 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException        UnexpectedValueException
+     * @expectedException        \Symfony\Component\Serializer\Exception\UnexpectedValueException
      * @expectedExceptionMessage Document types are not allowed.
      */
     public function testDocTypeIsNotAllowed()
@@ -61,7 +63,7 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
 
     public function testAttributes()
     {
-        $obj = new ScalarDummy;
+        $obj = new ScalarDummy();
         $obj->xmlFoo = array(
             'foo-bar' => array(
                 '@id' => 1,
@@ -90,7 +92,7 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
 
     public function testElementNameValid()
     {
-        $obj = new ScalarDummy;
+        $obj = new ScalarDummy();
         $obj->xmlFoo = array(
             'foo-bar' => 'a',
             'foo_bar' => 'a',
@@ -201,10 +203,18 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($source, $this->encoder->encode($obj, 'xml'));
     }
 
+    public function testEncodeWithNamespace()
+    {
+        $source = $this->getNamespacedXmlSource();
+        $array = $this->getNamespacedArray();
+
+        $this->assertEquals($source, $this->encoder->encode($array, 'xml'));
+    }
+
     public function testEncodeSerializerXmlRootNodeNameOption()
     {
         $options = array('xml_root_node_name' => 'test');
-        $this->encoder = new XmlEncoder;
+        $this->encoder = new XmlEncoder();
         $serializer = new Serializer(array(), array('xml' => new XmlEncoder()));
         $this->encoder->setSerializer($serializer);
 
@@ -224,6 +234,39 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
         $obj = $this->getObject();
 
         $this->assertEquals(get_object_vars($obj), $this->encoder->decode($source, 'xml'));
+    }
+
+    public function testDecodeCdataWrapping()
+    {
+        $expected = array(
+            'firstname' => 'Paul <or Me>',
+        );
+
+        $xml = '<?xml version="1.0"?>'."\n".
+            '<response><firstname><![CDATA[Paul <or Me>]]></firstname></response>'."\n";
+
+        $this->assertEquals($expected, $this->encoder->decode($xml, 'xml'));
+    }
+
+    public function testDecodeCdataWrappingAndWhitespace()
+    {
+        $expected = array(
+            'firstname' => 'Paul <or Me>',
+        );
+
+        $xml = '<?xml version="1.0"?>'."\n".
+            '<response><firstname>'."\n".
+                '<![CDATA[Paul <or Me>]]></firstname></response>'."\n";
+
+        $this->assertEquals($expected, $this->encoder->decode($xml, 'xml'));
+    }
+
+    public function testDecodeWithNamespace()
+    {
+        $source = $this->getNamespacedXmlSource();
+        $array = $this->getNamespacedArray();
+
+        $this->assertEquals($array, $this->encoder->decode($source, 'xml'));
     }
 
     public function testDecodeScalarWithAttribute()
@@ -285,9 +328,32 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $this->encoder->decode($source, 'xml'));
     }
 
+    public function testDecodeIgnoreWhiteSpace()
+    {
+        $source = <<<XML
+<?xml version="1.0"?>
+<people>
+    <person>
+        <firstname>Benjamin</firstname>
+        <lastname>Alexandre</lastname>
+    </person>
+    <person>
+        <firstname>Damien</firstname>
+        <lastname>Clay</lastname>
+    </person>
+</people>
+XML;
+        $expected = array('person' => array(
+            array('firstname' => 'Benjamin', 'lastname' => 'Alexandre'),
+            array('firstname' => 'Damien', 'lastname' => 'Clay')
+        ));
+
+        $this->assertEquals($expected, $this->encoder->decode($source, 'xml'));
+    }
+
     public function testDecodeWithoutItemHash()
     {
-        $obj = new ScalarDummy;
+        $obj = new ScalarDummy();
         $obj->xmlFoo = array(
             'foo-bar' => array(
                 '@key' => "value",
@@ -318,6 +384,14 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $this->encoder->decode($xml, 'xml'));
     }
 
+    /**
+     * @expectedException \Symfony\Component\Serializer\Exception\UnexpectedValueException
+     */
+    public function testDecodeInvalidXml()
+    {
+        $this->encoder->decode('<?xml version="1.0"?><invalid><xml>', 'xml');
+    }
+
     public function testPreventsComplexExternalEntities()
     {
         $oldCwd = getcwd();
@@ -337,6 +411,12 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
         }
     }
 
+    public function testDecodeEmptyXml()
+    {
+        $this->setExpectedException('Symfony\Component\Serializer\Exception\UnexpectedValueException', 'Invalid XML data, it can not be empty.');
+        $this->encoder->decode(' ', 'xml');
+    }
+
     protected function getXmlSource()
     {
         return '<?xml version="1.0"?>'."\n".
@@ -350,9 +430,56 @@ class XmlEncoderTest extends \PHPUnit_Framework_TestCase
             '</response>'."\n";
     }
 
+    protected function getNamespacedXmlSource()
+    {
+        return '<?xml version="1.0"?>'."\n".
+            '<response xmlns="http://www.w3.org/2005/Atom" xmlns:app="http://www.w3.org/2007/app" xmlns:media="http://search.yahoo.com/mrss/" xmlns:gd="http://schemas.google.com/g/2005" xmlns:yt="http://gdata.youtube.com/schemas/2007">'.
+            '<qux>1</qux>'.
+            '<app:foo>foo</app:foo>'.
+            '<yt:bar>a</yt:bar><yt:bar>b</yt:bar>'.
+            '<media:baz><media:key>val</media:key><media:key2>val</media:key2><item key="A B">bar</item>'.
+            '<item><title>title1</title></item><item><title>title2</title></item>'.
+            '<Barry size="large"><FooBar gd:id="1"><Baz>Ed</Baz></FooBar></Barry></media:baz>'.
+            '</response>'."\n";
+    }
+
+    protected function getNamespacedArray()
+    {
+        return array(
+            '@xmlns'       => 'http://www.w3.org/2005/Atom',
+            '@xmlns:app'   => 'http://www.w3.org/2007/app',
+            '@xmlns:media' => 'http://search.yahoo.com/mrss/',
+            '@xmlns:gd'    => 'http://schemas.google.com/g/2005',
+            '@xmlns:yt'    => 'http://gdata.youtube.com/schemas/2007',
+            'qux' => "1",
+            'app:foo' => "foo",
+            'yt:bar' => array("a", "b"),
+            'media:baz' => array(
+                'media:key' => "val",
+                'media:key2' => "val",
+                'A B' => "bar",
+                'item' => array(
+                    array(
+                        'title' => 'title1',
+                    ),
+                    array(
+                        'title' => 'title2',
+                    )
+                ),
+                'Barry' => array(
+                    '@size' => 'large',
+                    'FooBar' => array(
+                        'Baz'    => 'Ed',
+                        '@gd:id' => 1,
+                    ),
+                ),
+            ),
+        );
+    }
+
     protected function getObject()
     {
-        $obj = new Dummy;
+        $obj = new Dummy();
         $obj->foo = 'foo';
         $obj->bar = array('a', 'b');
         $obj->baz = array('key' => 'val', 'key2' => 'val', 'A B' => 'bar', 'item' => array(array('title' => 'title1'), array('title' => 'title2')), 'Barry' => array('FooBar' => array('Baz' => 'Ed', '@id' => 1)));

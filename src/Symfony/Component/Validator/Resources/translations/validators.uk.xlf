@@ -28,7 +28,7 @@
             </trans-unit>
             <trans-unit id="7">
                 <source>You must select at most {{ limit }} choice.|You must select at most {{ limit }} choices.</source>
-                <target>Ви повинні обрати не більше ніж {{ limit }} варіантів</target>
+                <target>Ви повинні обрати не більше ніж {{ limit }} варіантів.</target>
             </trans-unit>
             <trans-unit id="8">
                 <source>One or more of the given values is invalid.</source>
@@ -175,7 +175,7 @@
                 <target>Висота зображення занадто мала ({{ height }}px). Мінімально допустима висота {{ min_height }}px.</target>
             </trans-unit>
             <trans-unit id="47">
-                <source>This value should be the user current password.</source>
+                <source>This value should be the user's current password.</source>
                 <target>Значення має бути поточним паролем користувача.</target>
             </trans-unit>
             <trans-unit id="48">

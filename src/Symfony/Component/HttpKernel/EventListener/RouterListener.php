@@ -50,9 +50,10 @@ class RouterListener implements EventSubscriberInterface
      *
      * RequestStack will become required in 3.0.
      *
-     * @param UrlMatcherInterface|RequestMatcherInterface $matcher The Url or Request matcher
-     * @param RequestContext|null                         $context The RequestContext (can be null when $matcher implements RequestContextAwareInterface)
-     * @param LoggerInterface|null                        $logger  The logger
+     * @param UrlMatcherInterface|RequestMatcherInterface $matcher      The Url or Request matcher
+     * @param RequestContext|null                         $context      The RequestContext (can be null when $matcher implements RequestContextAwareInterface)
+     * @param LoggerInterface|null                        $logger       The logger
+     * @param RequestStack|null                           $requestStack A RequestStack instance
      *
      * @throws \InvalidArgumentException
      */
@@ -143,7 +144,7 @@ class RouterListener implements EventSubscriberInterface
 
             throw new NotFoundHttpException($message, $e);
         } catch (MethodNotAllowedException $e) {
-            $message = sprintf('No route found for "%s %s": Method Not Allowed (Allow: %s)', $request->getMethod(), $request->getPathInfo(), strtoupper(implode(', ', $e->getAllowedMethods())));
+            $message = sprintf('No route found for "%s %s": Method Not Allowed (Allow: %s)', $request->getMethod(), $request->getPathInfo(), implode(', ', $e->getAllowedMethods()));
 
             throw new MethodNotAllowedHttpException($e->getAllowedMethods(), $message, $e);
         }
