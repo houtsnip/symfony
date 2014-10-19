@@ -94,7 +94,14 @@ class DateTimeToLocalizedStringTransformer extends BaseDateTimeTransformer
             $dateTime->setTimezone(new \DateTimeZone('UTC'));
         }
 
-        $value = $this->getIntlDateFormatter()->format((int) $dateTime->format('U'));
+        if ( $this->pattern == 'dd/MM/yyyy' ) {
+            // IntlDateFormatter is broken for dates before 1902 or after 2038
+            // (i.e. when timestamp is bigger than PHP_INT_MAX).
+            // When we get a 64-bit server this condition can be removed.
+            $value = $dateTime->format('d/m/Y');
+        } else {
+            $value = $this->getIntlDateFormatter()->format((int) $dateTime->format('U'));
+        }
 
         if (intl_get_error_code() != 0) {
             throw new TransformationFailedException(intl_get_error_message());
